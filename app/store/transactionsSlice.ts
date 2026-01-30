@@ -1,5 +1,5 @@
-import { addTransaction, deleteTransaction, getTransactions, updateTransaction } from '@/app/services/transactions';
 import { Transaction } from '@/app/core/types/transaction';
+import { addTransaction, deleteTransaction, getTransactions, updateTransaction } from '@/app/services/transactions';
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 
 interface TransactionsState {
@@ -35,7 +35,7 @@ export const saveTransaction = createAsyncThunk(
   'transactions/save',
   async (t: Omit<Transaction, 'id'>) => {
     const dateStr = formatDateToISO(t.date);
-    
+
     const transaction: Transaction = {
       ...t,
       id: Date.now().toString(),
@@ -45,16 +45,35 @@ export const saveTransaction = createAsyncThunk(
     await addTransaction(transaction);
     return transaction;
   }
+
+);
+
+export const importTransactions = createAsyncThunk(
+  'transactions/import',
+  async (items: Omit<Transaction, 'id'>[]) => {
+    // Generate IDs and format dates before sending to service
+    const transactionsToSave = items.map(t => ({
+      ...t,
+      id: Date.now().toString() + Math.random().toString().substring(2, 8),
+      date: formatDateToISO(t.date),
+    } as Transaction));
+
+    // Dynamic import to avoid circular dependencies if any, or just direct import
+    const { bulkAddTransactions } = await import('@/app/services/transactions');
+    await bulkAddTransactions(transactionsToSave);
+
+    return transactionsToSave;
+  }
 );
 
 export const editTransaction = createAsyncThunk(
   'transactions/edit',
   async ({ id, data }: { id: string; data: Partial<Omit<Transaction, 'id'>> }) => {
     const dateStr = data.date ? formatDateToISO(data.date) : undefined;
-    
+
     const updates = { ...data, ...(dateStr && { date: dateStr }) };
     await updateTransaction(id, updates);
-    
+
     return { id, ...updates };
   }
 );
@@ -83,6 +102,9 @@ const transactionsSlice = createSlice({
       })
       .addCase(saveTransaction.fulfilled, (state, action) => {
         state.items.unshift(action.payload);
+      })
+      .addCase(importTransactions.fulfilled, (state, action) => {
+        state.items = [...action.payload, ...state.items];
       })
       .addCase(editTransaction.fulfilled, (state, action) => {
         const index = state.items.findIndex(t => t.id === action.payload.id);

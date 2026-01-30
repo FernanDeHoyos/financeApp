@@ -11,6 +11,11 @@ export const addTransaction = async (t: Transaction) => {
   await db.insert(transactions).values(t);
 };
 
+export const bulkAddTransactions = async (items: Transaction[]) => {
+  if (items.length === 0) return;
+  await db.insert(transactions).values(items);
+};
+
 export const updateTransaction = async (id: string, t: Partial<Omit<Transaction, 'id'>>) => {
   await db.update(transactions).set(t).where(eq(transactions.id, id));
 };

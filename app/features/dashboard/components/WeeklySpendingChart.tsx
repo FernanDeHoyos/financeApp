@@ -16,36 +16,61 @@ export const WeeklySpendingChart = ({ transactions }: WeeklySpendingChartProps) 
     const screenWidth = Dimensions.get('window').width;
     const chartWidth = screenWidth - 85; // Extra margin to avoid overflow and accommodate Y-axis
 
+    const formatCompact = (val: number) => {
+        if (val >= 1000000) {
+            const mVal = val / 1000000;
+            return `$${mVal.toFixed(mVal % 1 === 0 ? 0 : 1)}M`;
+        }
+        if (val >= 1000) {
+            const kVal = val / 1000;
+            return `$${kVal.toFixed(0)}k`;
+        }
+        return `$${val.toFixed(0)}`;
+    };
+
     const weeklyData = useMemo(() => {
         const expenses = transactions.filter(t => t.type === 'expense');
 
         const dayTotals = new Array(7).fill(0);
 
         expenses.forEach(t => {
-            const date = new Date(t.date);
+            if (!t.date) return;
+            // Parse manually to ensure Local Time (avoid UTC shift)
+            const parts = t.date.split('-');
+            if (parts.length !== 3) return;
+
+            const year = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const day = parseInt(parts[2], 10);
+
+            const date = new Date(year, month, day); // Local time constructor
+
             let dayIndex = date.getDay() - 1;
             if (dayIndex === -1) dayIndex = 6; // Sunday
             dayTotals[dayIndex] += t.amount;
         });
 
-        const maxVal = Math.max(...dayTotals, 100);
+        const maxVal = Math.max(...dayTotals, 10);
 
         return dayTotals.map((amount, index) => ({
             value: amount,
             label: DAYS_SHORT[index],
-            frontColor: amount === maxVal && amount > 0 ? colors.primary : colors.secondary,
+            // Use expense colors (Red/Orange family)
+            frontColor: amount === maxVal && amount > 0 ? colors.error : colors.errorContainer,
             topLabelComponent: () => (
-                <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant, fontSize: 9, fontWeight: '700' }}>
-                    {amount > 0 ? `$${(amount / 1000).toFixed(0)}k` : ''}
-                </Text>
+                <View style={{ width: 60, alignItems: 'center', marginLeft: -5, marginBottom: 4 }}>
+                    <Text variant="labelSmall" style={{ color: colors.onSurface, fontSize: 10, fontWeight: '700' }} numberOfLines={1}>
+                        {amount > 0 ? formatCompact(amount) : ''}
+                    </Text>
+                </View>
             ),
         }));
     }, [transactions, colors]);
 
     const maxDayIndex = useMemo(() => {
         const values = weeklyData.map(d => d.value);
-        const maxVal = Math.max(...values);
-        return maxVal > 0 ? values.indexOf(maxVal) : -1;
+        const max = Math.max(...values);
+        return max > 0 ? values.indexOf(max) : -1;
     }, [weeklyData]);
 
     const insightText = useMemo(() => {
@@ -58,7 +83,7 @@ export const WeeklySpendingChart = ({ transactions }: WeeklySpendingChartProps) 
     const calculatedMax = useMemo(() => {
         const values = weeklyData.map(d => d.value);
         const max = Math.max(...values);
-        return max > 0 ? max * 1.3 : 100;
+        return max > 0 ? max * 1.5 : 100;
     }, [weeklyData]);
 
     const hasData = maxDayIndex !== -1;
@@ -66,9 +91,9 @@ export const WeeklySpendingChart = ({ transactions }: WeeklySpendingChartProps) 
     return (
         <View style={styles.section}>
             <Text variant="titleMedium" style={{ color: colors.onSurface, fontWeight: '700', marginBottom: 16 }}>
-                Hábitos por Día
+                Gastos de la Semana
             </Text>
-            <Card style={[styles.card, { backgroundColor: colors.background, overflow: 'hidden' }]} mode="outlined">
+            <Card style={[styles.card, { backgroundColor: colors.background }]} mode="outlined">
                 <Card.Content style={styles.content}>
                     {!hasData ? (
                         <View style={{ height: 160, justifyContent: 'center', alignItems: 'center' }}>
@@ -79,6 +104,7 @@ export const WeeklySpendingChart = ({ transactions }: WeeklySpendingChartProps) 
                     ) : (
                         <View style={{ width: '100%', paddingLeft: 10 }}>
                             <BarChart
+                                key={`${calculatedMax}-${transactions.length}`} // Force re-render on month/scale change
                                 data={weeklyData}
                                 height={160}
                                 width={chartWidth}
@@ -94,12 +120,12 @@ export const WeeklySpendingChart = ({ transactions }: WeeklySpendingChartProps) 
                                 xAxisThickness={1}
                                 xAxisColor={colors.outlineVariant}
                                 yAxisThickness={0}
-                                yAxisLabelWidth={35}
-                                formatYLabel={(label) => `$${parseInt(label) >= 1000 ? (parseInt(label) / 1000).toFixed(0) + 'k' : label}`}
+                                yAxisLabelWidth={40}
+                                formatYLabel={(label) => formatCompact(parseFloat(label))}
                                 yAxisTextStyle={{ color: colors.onSurfaceVariant, fontSize: 10 }}
                                 xAxisLabelTextStyle={{ color: colors.onSurface, fontSize: 10, fontWeight: '600' }}
                                 isAnimated
-                                animationDuration={500}
+                                animationDuration={300}
                             />
                         </View>
                     )}

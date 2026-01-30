@@ -18,6 +18,8 @@ export const BudgetScreen = () => {
     const currentBudget = useSelector((state: RootState) => state.budget.monthlyLimit);
     const [displayAmount, setDisplayAmount] = useState(currentBudget > 0 ? currentBudget.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : '');
 
+    const [isSaving, setIsSaving] = useState(false);
+
     const handleSave = async () => {
         const value = parseFloat(displayAmount.replace(/\./g, ''));
         if (isNaN(value) || value <= 0) {
@@ -25,13 +27,17 @@ export const BudgetScreen = () => {
             return;
         }
 
+        setIsSaving(true);
         const success = await saveBudget(value);
+
         if (!success) {
+            setIsSaving(false);
             Alert.alert('Error', 'No se pudo guardar el presupuesto en la base de datos');
             return;
         }
 
         dispatch(setBudget(value));
+        setIsSaving(false);
         navigation.goBack();
     };
 
@@ -84,6 +90,8 @@ export const BudgetScreen = () => {
                 <Button
                     mode="contained"
                     onPress={handleSave}
+                    loading={isSaving}
+                    disabled={isSaving}
                     style={styles.saveButton}
                     contentStyle={{ paddingVertical: 6 }}
                     icon={({ size, color }) => <Check size={size} color={color} />}

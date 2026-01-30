@@ -1,10 +1,12 @@
 import { darkTheme, lightTheme } from '@/app/core/theme/theme';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import React from 'react';
 import { useColorScheme } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import { Provider as ReduxProvider } from 'react-redux';
 import { ThemeProvider, useThemeContext } from './context/ThemeContext';
+import { queryClient } from './core/api/queryClient';
 import { store } from './store/store';
 
 function RootLayoutContent() {
@@ -26,9 +28,11 @@ function RootLayoutContent() {
 export default function RootLayout() {
   return (
     <ReduxProvider store={store}>
-      <ThemeProvider>
-        <RootLayoutContent />
-      </ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>
+          <RootLayoutContent />
+        </ThemeProvider>
+      </QueryClientProvider>
     </ReduxProvider>
   );
 }

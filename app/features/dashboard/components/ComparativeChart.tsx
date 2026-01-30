@@ -20,7 +20,9 @@ export const ComparativeChart = ({ data }: ComparativeChartProps) => {
             height={200}
             barWidth={40}
             spacing={60}
+            yAxisIndicesColor={colors.onSurfaceVariant}
             yAxisTextStyle={{ color: colors.onSurfaceVariant, fontSize: 12 }}
+            xAxisIndicesColor={colors.onSurfaceVariant}
             yAxisLabelWidth={40}
             labelWidth={70}
             isAnimated

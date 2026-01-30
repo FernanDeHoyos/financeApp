@@ -31,7 +31,7 @@ export const CashFlowCard = ({ income, expense }: CashFlowCardProps) => {
                             <TrendingUp size={20} color={colors.income} />
                         </View>
                         <View>
-                            <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Entradas</Text>
+                            <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>Entradas</Text>
                             <Text variant="titleMedium" style={{ color: colors.income, fontWeight: '700' }}>
                                 {formatMoney(income)}
                             </Text>
@@ -45,7 +45,7 @@ export const CashFlowCard = ({ income, expense }: CashFlowCardProps) => {
                             <TrendingDown size={20} color={colors.expense} />
                         </View>
                         <View>
-                            <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>Salidas</Text>
+                            <Text variant="bodyMedium" style={{ color: colors.onSurfaceVariant }}>Salidas</Text>
                             <Text variant="titleMedium" style={{ color: colors.expense, fontWeight: '700' }}>
                                 {formatMoney(expense)}
                             </Text>

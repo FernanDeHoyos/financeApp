@@ -1,6 +1,6 @@
-import { Screen } from '@/app/navigation/AppNavigator';
 import { AppTheme } from '@/app/core/theme/theme';
-import { Minus, Plus } from 'lucide-react-native';
+import { Screen } from '@/app/navigation/AppNavigator';
+import { FileUp, Minus, Plus } from 'lucide-react-native';
 import { StyleSheet, TouchableOpacity, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 
@@ -24,6 +24,20 @@ export const QuickActionBar = ({ onNavigate }: QuickActionBarProps) => {
         <View>
           <Text variant="titleMedium" style={{ color: '#FFF', fontWeight: '800' }}>Gasto</Text>
           <Text variant="labelSmall" style={{ color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>Registrar salida</Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.actionButton, { backgroundColor: colors.secondary, flex: 0.8 }]}
+        onPress={() => onNavigate('ImportTransactions')}
+        activeOpacity={0.8}
+      >
+        <View style={styles.iconCircle}>
+          <FileUp size={24} color="#FFF" strokeWidth={3} />
+        </View>
+        <View>
+          <Text variant="titleMedium" style={{ color: '#FFF', fontWeight: '800' }}>Importar</Text>
+          <Text variant="labelSmall" style={{ color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>Excel</Text>
         </View>
       </TouchableOpacity>
 

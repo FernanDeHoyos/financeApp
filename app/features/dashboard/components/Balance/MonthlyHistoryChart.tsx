@@ -1,9 +1,10 @@
+
 import { AppTheme } from '@/app/core/theme/theme';
 import { Transaction } from '@/app/core/types/transaction';
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { BarChart } from 'react-native-gifted-charts';
-import { Card, Text, useTheme } from 'react-native-paper';
+import { Card, Divider, Text, useTheme } from 'react-native-paper';
 
 interface MonthlyHistoryChartProps {
     transactions: Transaction[];
@@ -31,7 +32,7 @@ export const MonthlyHistoryChart = ({ transactions, dark }: MonthlyHistoryChartP
         return Object.entries(balanceByMonth)
             .sort((a, b) => a[0].localeCompare(b[0]))
             .flatMap(([month, data]) => {
-                const label = new Date(`${month}-01`).toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
+                const label = new Date(`${month}-01T12:00:00`).toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
                 return [
                     {
                         value: data.income,
@@ -44,6 +45,7 @@ export const MonthlyHistoryChart = ({ transactions, dark }: MonthlyHistoryChartP
                     {
                         value: data.expense,
                         frontColor: colors.expense,
+                        labelTextStyle: { color: colors.onSurfaceVariant, fontSize: 10 }, // add duplicated prop just in case
                     }
                 ];
             });
@@ -60,7 +62,7 @@ export const MonthlyHistoryChart = ({ transactions, dark }: MonthlyHistoryChartP
             return balance > max.balance ? { month, balance } : max;
         }, { month: '', balance: -Infinity });
 
-        const monthName = bestMonth.month ? new Date(`${bestMonth.month}-01`).toLocaleDateString('es-ES', { month: 'long' }) : '';
+        const monthName = bestMonth.month ? new Date(`${bestMonth.month}-01T12:00:00`).toLocaleDateString('es-ES', { month: 'long' }) : '';
 
         return {
             text: `Tu mejor mes fue ${monthName} con un balance positivo de $${bestMonth.balance.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}.`,
@@ -69,19 +71,22 @@ export const MonthlyHistoryChart = ({ transactions, dark }: MonthlyHistoryChartP
 
     }, [balanceByMonth]);
 
-    const monthlyDetails = useMemo(() => {
+    const history = useMemo(() => {
         return Object.entries(balanceByMonth)
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([month, data]) => {
-                const [year, monthNum] = month.split('-').map(Number);
-                const label = new Date(year, monthNum - 1).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+            .map(([key, val]) => {
+                const parts = key.split('-').map(Number);
+                const year = parts[0];
+                const month = parts[1];
                 return {
+                    year,
                     month,
-                    label,
-                    income: data.income,
-                    expense: data.expense,
-                    balance: data.income - data.expense,
+                    income: val.income,
+                    expense: val.expense
                 };
+            })
+            .sort((a, b) => {
+                if (a.year !== b.year) return b.year - a.year;
+                return b.month - a.month;
             });
     }, [balanceByMonth]);
 
@@ -149,28 +154,78 @@ export const MonthlyHistoryChart = ({ transactions, dark }: MonthlyHistoryChartP
             {/* Tabla de detalles mensuales */}
             <Card style={[styles.chartCard, { backgroundColor: colors.surface }]} mode="outlined">
                 <Card.Content style={{ paddingVertical: 16, paddingHorizontal: 12 }}>
-                    <View style={styles.tableHeader}>
-                        <Text style={[styles.tableHeaderCell, { color: colors.onSurfaceVariant, flex: 1.2 }]}>Mes</Text>
-                        <Text style={[styles.tableHeaderCell, { color: colors.income, flex: 1 }]}>Ingresos</Text>
-                        <Text style={[styles.tableHeaderCell, { color: colors.expense, flex: 1 }]}>Gastos</Text>
-                        <Text style={[styles.tableHeaderCell, { color: colors.onSurface, flex: 1, textAlign: 'right' }]}>Balance</Text>
+
+                    <Text variant="titleMedium" style={{ fontWeight: '700', marginBottom: 16, color: colors.onSurface }}>
+                        Historial Mensual
+                    </Text>
+
+                    {/* Table Header */}
+                    <View style={styles.headerRow}>
+                        <Text style={[styles.headerText, { color: colors.onSurfaceVariant, flex: 1.5 }]}>Mes</Text>
+                        <Text style={[styles.headerText, { color: colors.onSurfaceVariant, flex: 1 }]}>Ingreso</Text>
+                        <Text style={[styles.headerText, { color: colors.onSurfaceVariant, flex: 1 }]}>Gasto</Text>
+                        <Text style={[styles.headerText, { color: colors.onSurfaceVariant, flex: 1, textAlign: 'right' }]}>Balance</Text>
                     </View>
-                    {monthlyDetails.map((detail, idx) => (
-                        <View key={detail.month} style={[styles.tableRow, { backgroundColor: idx % 2 === 0 ? colors.surfaceVariant : 'transparent' }]}>
-                            <Text style={[styles.tableCell, { color: colors.onSurface, flex: 1.2, fontSize: 12 }]}>
-                                {detail.label}
-                            </Text>
-                            <Text style={[styles.tableCell, { color: colors.income, flex: 1, fontWeight: '600' }]}>
-                                ${detail.income.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                            </Text>
-                            <Text style={[styles.tableCell, { color: colors.expense, flex: 1, fontWeight: '600' }]}>
-                                ${detail.expense.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                            </Text>
-                            <Text style={[styles.tableCell, { color: detail.balance >= 0 ? colors.income : colors.expense, flex: 1, fontWeight: '700', textAlign: 'right' }]}>
-                                ${detail.balance.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ".")}
-                            </Text>
-                        </View>
-                    ))}
+
+                    {/* Table Rows */}
+                    {history.map((item: any, index) => {
+                        const balance = item.income - item.expense;
+                        const savingsRate = item.income > 0 ? ((balance / item.income) * 100) : 0;
+                        const monthName = new Date(item.year, item.month - 1).toLocaleDateString('es-ES', { month: 'short', year: '2-digit' });
+
+                        return (
+                            <View key={`${item.year}-${item.month}`}>
+                                <View style={styles.row}>
+                                    {/* Month & Savings */}
+                                    <View style={{ flex: 1.5 }}>
+                                        <Text variant="bodyMedium" style={{ fontWeight: '600', color: colors.onSurface, textTransform: 'capitalize' }}>
+                                            {monthName}
+                                        </Text>
+                                        <View style={{
+                                            flexDirection: 'row', alignItems: 'center', marginTop: 2
+                                        }}>
+                                            <View style={{
+                                                backgroundColor: savingsRate > 0 ? colors.primaryContainer : colors.errorContainer,
+                                                paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4
+                                            }}>
+                                                <Text style={{
+                                                    fontSize: 10, fontWeight: '700',
+                                                    color: savingsRate > 0 ? colors.onPrimaryContainer : colors.onErrorContainer
+                                                }}>
+                                                    {savingsRate.toFixed(0)}% Ahorro
+                                                </Text>
+                                            </View>
+                                        </View>
+                                    </View>
+
+                                    {/* Income */}
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 13, color: colors.income, fontWeight: '600' }}>
+                                            ${item.income.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                                        </Text>
+                                    </View>
+
+                                    {/* Expense */}
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={{ fontSize: 13, color: colors.expense, fontWeight: '600' }}>
+                                            ${item.expense.toLocaleString('es-CO', { maximumFractionDigits: 0 })}
+                                        </Text>
+                                    </View>
+
+                                    {/* Balance */}
+                                    <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                                        <Text style={{
+                                            fontWeight: '700',
+                                            color: balance >= 0 ? colors.primary : colors.error
+                                        }}>
+                                            {balance >= 0 ? '+' : ''}${balance.toLocaleString('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                                        </Text>
+                                    </View>
+                                </View>
+                                {index < history.length - 1 && <Divider style={{ backgroundColor: colors.outlineVariant, opacity: 0.3 }} />}
+                            </View>
+                        );
+                    })}
                 </Card.Content>
             </Card>
         </View>
@@ -184,8 +239,26 @@ const styles = StyleSheet.create({
     legendContainer: { flexDirection: 'row', justifyContent: 'center', gap: 16, paddingBottom: 16 },
     legendItem: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     legendColor: { width: 12, height: 12, borderRadius: 6 },
-    tableHeader: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#E0E0E0', paddingBottom: 10, marginBottom: 12 },
-    tableHeaderCell: { fontWeight: '700', fontSize: 11 },
-    tableRow: { flexDirection: 'row', paddingVertical: 10, borderRadius: 6 },
-    tableCell: { fontWeight: '500' },
+    card: {
+        borderRadius: 18,
+        marginBottom: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.05)',
+    },
+    headerRow: {
+        flexDirection: 'row',
+        marginBottom: 12,
+        paddingBottom: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.05)',
+    },
+    headerText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    row: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
 });

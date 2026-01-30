@@ -9,7 +9,8 @@ export type Screen =
   | 'MonthlyComparison'
   | 'ManageCategories'
   | 'Settings'
-  | 'EditProfile';
+  | 'EditProfile'
+  | 'ImportTransactions';
 
 export function AppNavigator() {
   return <BottomTabs />;

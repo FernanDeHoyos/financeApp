@@ -38,7 +38,14 @@ export const useFinancialTrend = (transactions: Transaction[]) => {
         const categoriesByMonth: Record<string, Record<string, number>> = {};
 
         expenses.forEach(t => {
-            const month = t.date.substring(0, 7);
+            // Robust parsing
+            const date = new Date(t.date);
+            if (isNaN(date.getTime())) return;
+            // Manual YYYY-MM construction to avoid timezone shifts or string format issues
+            const year = date.getFullYear();
+            const m = date.getMonth() + 1;
+            const month = `${year}-${m.toString().padStart(2, '0')}`;
+
             expensesByMonth[month] = (expensesByMonth[month] || 0) + t.amount;
 
             if (!categoriesByMonth[month]) categoriesByMonth[month] = {};
