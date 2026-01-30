@@ -1,15 +1,17 @@
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core';
+import { real, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 
-export const ingresos = sqliteTable('ingresos', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  titulo: text('titulo').notNull(),
-  monto: real('monto').notNull(),
-  fecha: text('fecha').notNull(),
+export const transactions = sqliteTable('transactions', {
+  id: text('id').primaryKey(),
+  type: text('type', { enum: ['income', 'expense'] }).notNull(),
+  description: text('description').notNull(),
+  amount: real('amount').notNull(),
+  category: text('category').notNull(),
+  date: text('date').notNull(),
 });
 
-export const gastos = sqliteTable('gastos', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  titulo: text('titulo').notNull(),
-  monto: real('monto').notNull(),
-  fecha: text('fecha').notNull(),
+export const categories = sqliteTable('categories', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull().unique(),
+  type: text('type', { enum: ['income', 'expense', 'both'] }).notNull().default('both'),
+  isCustom: text('isCustom').notNull().default('true'),
 });
